@@ -1,0 +1,54 @@
+namespace: helm-testing
+
+# Deployment configuration
+deployment:
+  name: stage-angular-calendar-helmdeployment
+  replicas: 1
+  labels:
+    helm-app: stage-calendar-helm-app
+  image:
+    repository: gcr.io/la-prod-k8-cluster/stage-calendar-app
+    tag: 8dce0e3302bce67767b453efed7480ea0fb4c2ab
+  container:
+    name: stage-calendar-app
+    port: 443
+    protocol: TCP
+  resources:
+    requests:
+      cpu: 150m
+      memory: 100Mi
+    limits:
+      cpu: 250m
+      memory: 250Mi 
+  affinity:
+    nodeAffinity:
+      key: helm-app
+      value: stage-calendar-helm-app
+      
+# Horizontal Pod Autoscaler configuration
+hpa:
+  name: my-hpa
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    cpu:
+      target:
+        averageUtilization: 50
+    memory:
+      target:
+        averageValue: 180Mi
+
+# Service for helm
+service:
+  name: stage-calendar-helm-app-service
+  namespace: helm-testing
+  annotations:
+    appProtocols: '{"stage-calendar-helm-https-port":"HTTPS"}'
+    neg: '{"exposed_ports": {"443":{"name": "angular-calendar-helm-stage"}}}'
+  portName: stage-calendar-helm-https-port
+  port: 443
+  targetPort: 443
+  selector:
+    key: helm-app
+    value: stage-calendar-helm-app
+  type: NodePort
